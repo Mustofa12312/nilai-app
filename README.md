@@ -75,6 +75,25 @@
       font-weight: bold;
     }
 
+    #predikat {
+      text-align: center;
+      margin-top: 10px;
+      color: #444;
+      font-weight: 600;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #ff4d4f;
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
     @media screen and (max-width: 600px) {
       .container {
         padding: 20px;
@@ -88,71 +107,99 @@
 
     <div class="input-group">
       <label for="salah1">Salah Romawi I (10 soal × 3 poin)</label>
-      <input type="number" id="salah1" min="0" max="10" />
+      <input type="number" id="salah1" min="0" max="10" placeholder="0 - 10"/>
     </div>
 
     <div class="input-group">
       <label for="salah2">Salah Romawi II (10 soal × 4 poin)</label>
-      <input type="number" id="salah2" min="0" max="10" />
+      <input type="number" id="salah2" min="0" max="10" placeholder="0 - 10"/>
     </div>
 
     <div class="input-group">
       <label for="salah3">Salah Romawi III (5 soal × 6 poin)</label>
-      <input type="number" id="salah3" min="0" max="5" />
+      <input type="number" id="salah3" min="0" max="5" placeholder="0 - 5"/>
     </div>
 
     <div id="hasil">Total Nilai: 0 / 100</div>
+    <div id="predikat">Predikat: -</div>
+    <button id="resetBtn">Reset Nilai</button>
   </div>
 
-  <script>
-    const inputs = Array.from(document.querySelectorAll("input"));
-    const hasil = document.getElementById("hasil");
+<script>
+  const inputs = Array.from(document.querySelectorAll("input[type='number']"));
+  const hasil = document.getElementById("hasil");
+  const predikat = document.getElementById("predikat");
+  let baruDiklik = null;
 
-    // Isi dari localStorage
+  // Load nilai dari localStorage
+  inputs.forEach(input => {
+    input.value = localStorage.getItem(input.id) || '';
+  });
+
+  inputs.forEach((input, index) => {
+    input.addEventListener("focus", () => {
+      baruDiklik = true;
+    });
+
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = inputs[index + 1];
+        if (next) next.focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = inputs[index - 1];
+        if (prev) prev.focus();
+      } else if (e.key >= '0' && e.key <= '9' && baruDiklik) {
+        // Ganti isi input dengan angka yang ditekan, hanya saat baru diklik
+        e.preventDefault();
+        input.value = e.key;
+        baruDiklik = false;
+        hitungNilai();
+      }
+    });
+
+    input.addEventListener("input", () => {
+      const max = parseInt(input.max);
+      let value = parseInt(input.value) || 0;
+      if (value > max) {
+        input.value = max;
+      }
+      localStorage.setItem(input.id, input.value);
+      hitungNilai();
+    });
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
     inputs.forEach(input => {
-      input.value = localStorage.getItem(input.id) || '';
+      input.value = '';
+      localStorage.removeItem(input.id);
     });
-
-    inputs.forEach((input, index) => {
-      input.addEventListener("keydown", function(e) {
-        const isNumberKey = e.key >= '0' && e.key <= '9';
-
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          const next = inputs[index + 1];
-          if (next) next.focus();
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          const prev = inputs[index - 1];
-          if (prev) prev.focus();
-        } else if (isNumberKey) {
-          e.preventDefault();
-          input.value = e.key;
-          hitungNilai();
-        }
-      });
-
-      input.addEventListener("input", hitungNilai);
-    });
-
-    function hitungNilai() {
-      const salah1 = parseInt(document.getElementById('salah1').value) || 0;
-      const salah2 = parseInt(document.getElementById('salah2').value) || 0;
-      const salah3 = parseInt(document.getElementById('salah3').value) || 0;
-
-      localStorage.setItem('salah1', salah1);
-      localStorage.setItem('salah2', salah2);
-      localStorage.setItem('salah3', salah3);
-
-      const benar1 = 10 - salah1;
-      const benar2 = 10 - salah2;
-      const benar3 = 5 - salah3;
-
-      const nilai = (benar1 * 3) + (benar2 * 4) + (benar3 * 6);
-      hasil.innerText = `Total Nilai: ${nilai} / 100`;
-    }
-
     hitungNilai();
-  </script>
+  });
+
+  function hitungNilai() {
+    const salah1 = parseInt(document.getElementById('salah1').value) || 0;
+    const salah2 = parseInt(document.getElementById('salah2').value) || 0;
+    const salah3 = parseInt(document.getElementById('salah3').value) || 0;
+
+    const benar1 = 10 - salah1;
+    const benar2 = 10 - salah2;
+    const benar3 = 5 - salah3;
+
+    const total = (benar1 * 3) + (benar2 * 4) + (benar3 * 6);
+    hasil.innerText = `Total Nilai: ${total} / 100`;
+
+    let grade = '-';
+    if (total >= 90) grade = 'A';
+    else if (total >= 75) grade = 'B';
+    else if (total >= 60) grade = 'C';
+    else grade = 'D';
+
+    predikat.innerText = `Predikat: ${grade}`;
+  }
+
+  hitungNilai();
+</script>
 </body>
 </html>
